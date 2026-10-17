@@ -1,0 +1,33 @@
+# Python bytecode & environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# C extensions
+*.so
+
+# PyTorch / Ultralytics / YOLO model weights & runs
+*.pt
+*.pth
+*.onnx
+*.engine
+*.weights
+runs/
+yolov8*.pt
+
+# IDE & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Output logs & temporary outputs
+*.log
+*.json
+!data/sample_metadata.json
