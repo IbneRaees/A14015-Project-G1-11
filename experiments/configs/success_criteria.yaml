@@ -1,0 +1,19 @@
+# Targets used by the comparison script to fill "Addressed?" in the gap-resolution table.
+# These are the Phase 1 proposal targets, not results. Revisit the F1 target: it was written for a
+# pixel-level F1 on four damage classes, and the study now reports grid-cell macro-F1 on flooded/dry.
+gap1:
+  base_system: vlm/direct          # direct VLM visual prompting (RQ1); needs run_gap1_routes --vlm
+  our_system: e3/graph
+  connectivity_error_max: 0.08     # Phase 1: graph connectivity error rate below 8%
+  false_passable_reduction_min: 0.15   # Phase 1 H1: false-passable route errors down by at least 15% (relative)
+gap2:
+  base_system: yolo_instance_conf  # naive confidence of the E1 detector
+  strong_baseline: softmax_ts      # same head with softmax + temperature scaling
+  our_system: evidential
+  ece_max: 0.05                    # Phase 1: ECE below 0.05
+gap3:
+  base: E2                         # monolithic VLM (surrogate for the base paper)
+  ablation: E5/no_gap3             # same pipeline with the VLM on every cell, shown as extra evidence
+  ours: E3
+  latency_max_s: 2.0               # Phase 1: mean latency under 2.0 s per tile
+  building_macro_f1_min: 0.82      # Phase 1 value, see note above
