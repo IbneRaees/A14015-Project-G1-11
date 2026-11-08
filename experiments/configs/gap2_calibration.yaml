@@ -1,0 +1,11 @@
+# Gap 2 calibration experiment: evidential vs softmax vs softmax+TS vs YOLO instance confidence.
+data_root: data/FloodNet-Supervised_v1.0
+yolo_weights: runs/e1/seed{seed}/weights/best.pt              # E1 backbone of the same seed
+head_ckpt_evidential: runs/head/evidential_seed{seed}/best.pt
+head_ckpt_softmax: runs/head/softmax_seed{seed}/best.pt       # carries the temperature fitted on val
+seeds: [42, 123, 456]
+device: "0"
+map_conf: 0.25                  # instances above this define the "covered" pixels (same threshold as E1)
+iou: 0.7
+temperature_pixels_per_image: 4096   # val pixels sampled per tile to fit the evidential head's temperature
+fit_tiles: null                 # null = all val tiles
