@@ -11,6 +11,7 @@ env/
 ENV/
 
 # Project Datasets & Raw Downloads
+datasets/
 data/FloodNet-Supervised_v1.0/
 data/floodnet/
 data/floodnet_sample/

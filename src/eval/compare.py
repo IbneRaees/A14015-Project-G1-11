@@ -432,15 +432,19 @@ def _gap3(sys_: Dict[str, System], crit, n_boot, seed) -> dict:
     t_lat = ours.latency is not None and ours.latency[0] <= crit["latency_max_s"]
     t_f1 = ours.cell["building"]["macro_f1"] is not None and ours.cell["building"]["macro_f1"][0] >= crit["building_macro_f1_min"]
     row["addressed"] = status([t_lat, t_f1], improves)
-    row["evidence"] = (f"Δlatency {'n/a' if not ld else f'{ld['diff_point']:+.3f}s {fmt_ci(ld['ci95'])}'}; "
-                       f"Δbldg F1 {'n/a' if not fd else f'{fd['diff_point']:+.4f} {fmt_ci(fd['ci95'], 4)}'}; "
+    ld_str = 'n/a' if not ld else f"{ld['diff_point']:+.3f}s {fmt_ci(ld['ci95'])}"
+    fd_str = 'n/a' if not fd else f"{fd['diff_point']:+.4f} {fmt_ci(fd['ci95'], 4)}"
+    row["evidence"] = (f"Δlatency {ld_str}; "
+                       f"Δbldg F1 {fd_str}; "
                        f"latency<={crit['latency_max_s']}s {'met' if t_lat else 'missed'}, "
                        f"F1>={crit['building_macro_f1_min']} {'met' if t_f1 else 'missed'}; "
                        f"latency reduction {'significant' if improves else 'not significant'}")
     if abl is not None:                  # internal control: same pipeline with the VLM on every cell
         al, af = latency_diff(abl, ours, n_boot, seed), cell_diff(abl, ours, "building", "macro_f1", n_boot, seed)
-        row["evidence"] += (f"; vs {abl.label}: Δlatency {'n/a' if not al else f'{al['diff_point']:+.3f}s {fmt_ci(al['ci95'])}'}, "
-                            f"Δbldg F1 {'n/a' if not af else f'{af['diff_point']:+.4f} {fmt_ci(af['ci95'], 4)}'}")
+        al_str = 'n/a' if not al else f"{al['diff_point']:+.3f}s {fmt_ci(al['ci95'])}"
+        af_str = 'n/a' if not af else f"{af['diff_point']:+.4f} {fmt_ci(af['ci95'], 4)}"
+        row["evidence"] += (f"; vs {abl.label}: Δlatency {al_str}, "
+                            f"Δbldg F1 {af_str}")
     return row
 
 
