@@ -1,0 +1,27 @@
+# E3: full 3-agent pipeline (also drives the E5 ablations via --ablation).
+data_root: data/FloodNet-Supervised_v1.0
+yolo_weights: runs/e1/seed{seed}/weights/best.pt      # E1 fine-tuned backbone, same seed
+head_ckpt: runs/head/evidential_seed{seed}/best.pt    # evidential head trained on that backbone
+seeds: [42, 123, 456]
+device: "0"
+imgsz: 1024             # must match E1 and the head's training size (the head checkpoint's value wins)
+conf_low: 0.05          # YOLO runs this low so weak detections reach the fallback uncertainty map
+map_conf: 0.25          # only instances above this are painted into the label map (same as E1)
+iou: 0.7
+router_measure: entropy     # evidential map the router reads: vacuity | entropy | epistemic
+verifier_measure: vacuity
+router: {grid: 8, top_k: 4, max_regions: 8}
+min_blocked_run_px: 20       # geospatial agent: flood run (processing px) that blocks an edge; tune on val with run_gap1_routes
+# operating points, all fitted on the val split
+target_latency_s: 2.0       # Gap 3 target
+max_escalation_rate: null   # optional extra cap on the share of tiles sent to the VLM
+target_coverage: 0.8        # share of val tiles the verifier lets through without review
+fit_tiles: null             # null = all val tiles
+calib_tiles: 20             # val tiles used to time the fast path and the escalated path
+# heavy path
+vlm_model: Qwen/Qwen2-VL-7B-Instruct
+vlm_dtype: bfloat16
+vlm_load_in_4bit: false
+vlm_crop_max_side: 448
+vlm_max_new_tokens: 48
+log_dir: logs/e3

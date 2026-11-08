@@ -1,0 +1,19 @@
+# Uncertainty head on frozen YOLOv8x-Seg neck features (Gap 2).
+data_root: data/FloodNet-Supervised_v1.0
+yolo_weights: runs/e1/seed{seed}/weights/best.pt   # the E1 fine-tuned weights for the same seed
+imgsz: 1024         # long side after resize_for_yolo (both sides multiples of 32)
+levels: [0, 1]      # neck levels fused: 0 = P3 (stride 8), 1 = P4, 2 = P5
+hidden: 64
+out_stride: 2       # head output (and loss) resolution = input / out_stride
+epochs: 30
+batch: 4
+lr: 0.001
+weight_decay: 0.0001
+anneal_epochs: 10   # KL regulariser weight ramps 0 -> 1 over this many epochs (evidential head only)
+num_workers: 2
+device: "0"         # "cpu" for smoke tests
+amp: true           # fp16 for the frozen backbone on CUDA
+val_max_images: null            # use a fixed prefix of val for speed while debugging
+temperature_pixels_per_image: 4096
+out_root: runs/head
+seeds: [42, 123, 456]
