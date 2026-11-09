@@ -4,7 +4,7 @@ data_root: data/FloodNet-Supervised_v1.0
 vlm_model: Qwen/Qwen2-VL-7B-Instruct
 device: cuda
 dtype: bfloat16
-load_in_4bit: false
+load_in_4bit: true
 crop_max_side: 448        # each cell crop is shrunk to at most this many pixels on its long side
 max_new_tokens: 48
 log_dir: logs/e2

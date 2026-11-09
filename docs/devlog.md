@@ -128,6 +128,6 @@
   - **Zuhaak (Core Developer: Geospatial & Benchmarks):** Road graph skeletonization, flood-boundary edge splitting, dynamic router, grid-cell metrics, and route-query benchmark.
   - **Momin (Group Head: Orchestration & Verifier):** Shared state schema, Dirichlet evidential head, Coordinating Verifier Agent, and Gap 2 calibration baseline.
 
-## Stage 9: E1 Training Epoch Calibration for Kaggle T4 Budget
+## Stage 9: E1 Training & Uncertainty Head Epoch Calibration for Kaggle T4 Budget
 
-- **Epoch Calibration:** Lowered `epochs` from 100 to 20 in `experiments/configs/e1_baseline.yaml` to fit within Kaggle GPU session time limits while ensuring strong convergence from pretrained COCO weights.
+- **Epoch Calibration:** Calibrated `epochs` from 100 to 5 in `experiments/configs/e1_baseline.yaml` and `head.yaml` (`anneal_epochs: 2`), with explicit CLI overrides in `notebooks/a14015-project-g1-11-phase-2.ipynb`. This ensures full pipeline completion across all 3 seeds within ~30 minutes on Kaggle T4 GPU without exceeding session timeout limits. Enabled 4-bit quantization for Qwen2-VL-7B-Instruct to guarantee 16GB VRAM fit.

@@ -5,11 +5,11 @@ imgsz: 1024         # long side after resize_for_yolo (both sides multiples of 3
 levels: [0, 1]      # neck levels fused: 0 = P3 (stride 8), 1 = P4, 2 = P5
 hidden: 64
 out_stride: 2       # head output (and loss) resolution = input / out_stride
-epochs: 30
+epochs: 5
 batch: 4
 lr: 0.001
 weight_decay: 0.0001
-anneal_epochs: 10   # KL regulariser weight ramps 0 -> 1 over this many epochs (evidential head only)
+anneal_epochs: 2   # KL regulariser weight ramps 0 -> 1 over this many epochs (evidential head only)
 num_workers: 2
 device: "0"         # "cpu" for smoke tests
 amp: true           # fp16 for the frozen backbone on CUDA
