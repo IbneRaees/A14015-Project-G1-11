@@ -127,3 +127,7 @@
   - **Abdurrehman (Core Developer: Vision & Data):** Pushed foundational data split enforcement, YOLO feature hooks, Qwen2-VL backend, and execution runbook (`feat(data)`, `feat(vision)`, `build(infra)`).
   - **Zuhaak (Core Developer: Geospatial & Benchmarks):** Road graph skeletonization, flood-boundary edge splitting, dynamic router, grid-cell metrics, and route-query benchmark.
   - **Momin (Group Head: Orchestration & Verifier):** Shared state schema, Dirichlet evidential head, Coordinating Verifier Agent, and Gap 2 calibration baseline.
+
+## Stage 9: E1 Training Epoch Calibration for Kaggle T4 Budget
+
+- **Epoch Calibration:** Lowered `epochs` from 100 to 20 in `experiments/configs/e1_baseline.yaml` to fit within Kaggle GPU session time limits while ensuring strong convergence from pretrained COCO weights.
