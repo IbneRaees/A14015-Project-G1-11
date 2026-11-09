@@ -1,18 +1,18 @@
 """Download, extract, and prepare the official FloodNet-Supervised_v1.0 dataset.
 
 Workflow:
-1. Downloads the official 13 GB release (FloodNet.zip) from Dropbox (BinaLab official repository).
-2. Extracts and reorganizes into data/FloodNet-Supervised_v1.0/ with:
+1. Downloads the official 12.16 GB release (FloodNet.zip) from Dropbox (BinaLab official repository).
+2. Extracts and reorganizes into standard layout:
        train/train-org-img, train/train-label-img
        val/val-org-img, val/val-label-img
        test/test-org-img, test/test-label-img
-3. Freezes the 1,445 / 450 / 448 manifest (data/splits/floodnet_split.json).
-4. Converts train/val masks into YOLOv8 polygon instances (datasets/floodnet_yolo/).
+3. Automatically deletes the zip archive if requested (--clean-zip) or if in /tmp to preserve disk space.
+4. Freezes the 1,445 / 450 / 448 manifest (data/splits/floodnet_split.json).
+5. Converts train/val masks into YOLOv8 polygon instances (datasets/floodnet_yolo/).
 
 Usage:
     python data/download_floodnet.py
-    python data/download_floodnet.py --skip-download   # if zip already downloaded
-    python data/download_floodnet.py --prep-only       # only run manifest & YOLO prep
+    python data/download_floodnet.py --out-dir /tmp/FloodNet-Supervised_v1.0 --zip-path /tmp/FloodNet.zip --clean-zip
 """
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ def download_file(url: str, output_path: Path, chunk_size: int = 1024 * 1024) ->
     return output_path
 
 
-def extract_archive(zip_path: Path, target_dir: Path) -> Path:
+def extract_archive(zip_path: Path, target_dir: Path, clean_zip: bool = False) -> Path:
     """Extract zip archive and ensure standard FloodNet layout."""
     target_dir.mkdir(parents=True, exist_ok=True)
     print(f"[+] Extracting {zip_path.name} into {target_dir}...")
@@ -100,15 +100,21 @@ def extract_archive(zip_path: Path, target_dir: Path) -> Path:
                 elapsed = time.time() - t0
                 print(f"\r[-] Extracted {extracted}/{total_files} files ({extracted/total_files*100:.1f}%) in {elapsed:.1f}s", end="", flush=True)
     print("\n[+] Extraction finished!")
+    
+    if clean_zip:
+        try:
+            zip_path.unlink()
+            print(f"[+] Removed archive {zip_path} to reclaim disk space.")
+        except Exception as e:
+            print(f"[!] Warning: Could not delete zip {zip_path}: {e}")
+
     return normalize_layout(target_dir)
 
 
 def normalize_layout(target_dir: Path) -> Path:
     """Finds train-org-img and ensures target_dir contains train/, val/, test/ directly."""
-    # Look for train-org-img anywhere inside target_dir
     matches = list(target_dir.rglob("train-org-img"))
     if not matches:
-        # Check if train folder is directly in target_dir
         if (target_dir / "train" / "train-org-img").is_dir():
             print(f"[+] Layout verified at: {target_dir.resolve()}")
             return target_dir
@@ -137,21 +143,18 @@ def prepare_supervised(root_dir: Path, yolo_dir: Path):
     print("Stage 0: Building & Verifying Split Manifest (1445 / 450 / 448)")
     print("=" * 60)
     
-    # 1. Build Manifest
     cmd_build = [python_exe, "-m", "data.floodnet", "--root", str(root_dir), "--build-manifest"]
     print(f"Executing: {' '.join(cmd_build)}")
     res1 = subprocess.run(cmd_build)
     if res1.returncode != 0:
         raise RuntimeError("Failed to build split manifest.")
 
-    # 2. Verify Manifest
     cmd_verify = [python_exe, "-m", "data.floodnet", "--root", str(root_dir), "--verify"]
     print(f"Executing: {' '.join(cmd_verify)}")
     res2 = subprocess.run(cmd_verify)
     if res2.returncode != 0:
         raise RuntimeError("Split verification failed.")
 
-    # 3. Supervised YOLO conversion (train + val)
     print("\n" + "=" * 60)
     print("Stage 0.5: Preparing Supervised YOLOv8 Dataset")
     print("=" * 60)
@@ -175,27 +178,26 @@ def main():
     parser.add_argument("--out-dir", default=str(DEFAULT_DEST), help="Destination extraction directory")
     parser.add_argument("--yolo-dir", default=str(DEFAULT_YOLO_DIR), help="Destination YOLO dataset directory")
     parser.add_argument("--skip-download", action="store_true", help="Skip download if archive already exists")
+    parser.add_argument("--clean-zip", action="store_true", help="Delete zip archive after extraction to save space")
     parser.add_argument("--prep-only", action="store_true", help="Only run manifest check and YOLO preparation")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
     zip_path = Path(args.zip_path)
     yolo_dir = Path(args.yolo_dir)
+    clean_zip = args.clean_zip or "tmp" in str(zip_path).lower()
 
     if not args.prep_only:
-        # Download
         if not args.skip_download and not (out_dir / "train" / "train-org-img").is_dir():
             download_file(args.url, zip_path)
         
-        # Extract
         if not (out_dir / "train" / "train-org-img").is_dir():
             if not zip_path.exists():
-                raise FileNotFoundError(f"Archive {zip_path} not found. Please run without --skip-download.")
-            extract_archive(zip_path, out_dir)
+                raise FileNotFoundError(f"Archive {zip_path} not found.")
+            extract_archive(zip_path, out_dir, clean_zip=clean_zip)
         else:
             print(f"[+] Extracted dataset already present at: {out_dir.resolve()}")
 
-    # Run manifest build, verify, and supervised YOLO preparation
     prepare_supervised(out_dir, yolo_dir)
 
 
