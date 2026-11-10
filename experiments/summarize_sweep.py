@@ -29,11 +29,25 @@ def summarize(paths, system: str):
 
 
 def main() -> None:
+    import glob
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("files", nargs="+")
     ap.add_argument("--system", default="e1_s42/graph")
     a = ap.parse_args()
-    rows, best = summarize(a.files, a.system)
+    
+    matched = []
+    for pattern in a.files:
+        expanded = glob.glob(pattern)
+        if expanded:
+            matched.extend(expanded)
+        elif Path(pattern).is_file():
+            matched.append(pattern)
+            
+    if not matched:
+        print(f"[!] Notice: No sweep result files found matching {a.files}. Skipping sweep summary.")
+        return
+
+    rows, best = summarize(matched, a.system)
     f = lambda v: "n/a" if v is None else f"{v:.4f}"
     print(f"system {a.system}, {rows[0]['n_queries']} queries")
     print("min_blocked_run_px   error  false-passable  false-blocked  unanswerable")

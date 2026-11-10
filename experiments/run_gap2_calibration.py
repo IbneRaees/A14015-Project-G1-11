@@ -102,14 +102,34 @@ def build_models(cfg: dict, seed: int):
 
     dev = str(cfg["device"])
     tdev = "cpu" if dev == "cpu" else f"cuda:{dev}"
-    ev, ev_meta = load_head(cfg["head_ckpt_evidential"].format(seed=seed), tdev)
-    sm, sm_meta = load_head(cfg["head_ckpt_softmax"].format(seed=seed), tdev)
+
+    ev_path = Path(cfg["head_ckpt_evidential"].format(seed=seed))
+    sm_path = Path(cfg["head_ckpt_softmax"].format(seed=seed))
+    if not ev_path.is_file() or not sm_path.is_file():
+        from experiments.train_uncertainty_head import train as train_head
+        from experiments.common import load_config
+        head_cfg = load_config(str(Path(__file__).parent / "configs" / "head.yaml"),
+                               data_root=cfg.get("data_root"), device=cfg.get("device"))
+        if not ev_path.is_file():
+            print(f"[+] Self-Healing: Training missing evidential head for seed {seed}...")
+            train_head(head_cfg, "evidential", seed, ev_path.parent)
+        if not sm_path.is_file():
+            print(f"[+] Self-Healing: Training missing softmax head for seed {seed}...")
+            train_head(head_cfg, "softmax", seed, sm_path.parent)
+
+    ev, ev_meta = load_head(str(ev_path), tdev)
+    sm, sm_meta = load_head(str(sm_path), tdev)
     if ev_meta["head"] != "evidential" or sm_meta["head"] != "softmax":
         raise ValueError("head checkpoints are swapped or wrong")
     if float(sm_meta.get("temperature", 1.0)) == 1.0:
         print("WARNING: the softmax checkpoint has temperature 1.0; its temperature was never fitted, so "
               "softmax_ts equals softmax_raw. Retrain it with experiments/train_uncertainty_head.py --head softmax.")
-    fast = UltralyticsFastPath(YOLO(cfg["yolo_weights"].format(seed=seed)), dev, cfg["map_conf"], cfg["iou"])
+    yolo_w = Path(cfg["yolo_weights"].format(seed=seed))
+    if not yolo_w.is_file():
+        from experiments.train_baseline import train_seed
+        print(f"[+] Self-Healing: Training missing YOLO baseline for seed {seed}...")
+        yolo_w = train_seed(seed=seed, data_root=cfg.get("data_root"), epochs=5, device=cfg.get("device"))
+    fast = UltralyticsFastPath(YOLO(str(yolo_w)), dev, cfg["map_conf"], cfg["iou"])
     return fast, ev.to(tdev), sm.to(tdev), ev_meta, sm_meta
 
 

@@ -213,24 +213,24 @@ def build_pipeline(cfg: dict, seed: int, vlm, ablation: Optional[str]) -> Agenti
     pcfg = ablation_config(pcfg, ablation)
     head, meta = None, None
     if pcfg.uncertainty_source == "evidential" or pcfg.verifier == "evidential":
-        head_path = cfg["head_ckpt"].format(seed=seed)
-        if not Path(head_path).is_file():
-            raise FileNotFoundError(
-                f"\n[!] Required head checkpoint not found: '{head_path}'\n"
-                f"[!] Prerequisite missing: You must execute Stage 3 first:\n"
-                f"    python -m experiments.train_uncertainty_head --head evidential --seed {seed} --epochs 5\n"
-            )
-        head, meta = load_head(head_path, tdev)
+        head_path = Path(cfg["head_ckpt"].format(seed=seed))
+        if not head_path.is_file():
+            print(f"[!] Head checkpoint not found at: '{head_path}'")
+            print(f"[+] Self-Healing: Training missing evidential head for seed {seed}...")
+            from experiments.train_uncertainty_head import train as train_head
+            head_cfg = load_config(str(Path(__file__).parent / "configs" / "head.yaml"),
+                                   data_root=cfg.get("data_root"), device=cfg.get("device"))
+            train_head(head_cfg, "evidential", seed, head_path.parent)
+        head, meta = load_head(str(head_path), tdev)
         head = head.to(tdev)
         pcfg = dataclasses.replace(pcfg, imgsz=meta["imgsz"])
-    yolo_path = cfg["yolo_weights"].format(seed=seed)
-    if not Path(yolo_path).is_file():
-        raise FileNotFoundError(
-            f"\n[!] Required YOLO fine-tuned weights not found: '{yolo_path}'\n"
-            f"[!] Prerequisite missing: You must execute Stage 1 first:\n"
-            f"    python -m experiments.train_baseline --seed {seed} --epochs 5\n"
-        )
-    yolo = YOLO(yolo_path)
+    yolo_path = Path(cfg["yolo_weights"].format(seed=seed))
+    if not yolo_path.is_file():
+        print(f"[!] YOLO weights not found at: '{yolo_path}'")
+        print(f"[+] Self-Healing: Training missing YOLO baseline for seed {seed}...")
+        from experiments.train_baseline import train_seed
+        yolo_path = train_seed(seed=seed, data_root=cfg.get("data_root"), epochs=5, device=cfg.get("device"))
+    yolo = YOLO(str(yolo_path))
     fast = UltralyticsFastPath(yolo, dev, cfg["conf_low"], cfg["iou"], want_features=head is not None)
     router = DynamicRouter(RouterConfig(mode=pcfg.router_mode, **cfg["router"]))
     geo = GeospatialReasoningAgent(GeospatialConfig(min_blocked_run_px=cfg.get("min_blocked_run_px", 20)))

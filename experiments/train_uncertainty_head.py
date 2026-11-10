@@ -168,11 +168,10 @@ def train(cfg: dict, kind: str, seed: int, out_dir, model: Optional[torch.nn.Mod
     yolo_weights = cfg["yolo_weights"].format(seed=seed)
     if model is None:
         if not Path(yolo_weights).is_file():
-            raise FileNotFoundError(
-                f"\n[!] Required YOLO fine-tuned weights not found: '{yolo_weights}'\n"
-                f"[!] Prerequisite missing: You must execute Stage 1 first to train the baseline model:\n"
-                f"    python -m experiments.train_baseline --seed {seed} --epochs 5\n"
-            )
+            print(f"\n[!] Required YOLO fine-tuned weights not found at: '{yolo_weights}'")
+            print(f"[+] Self-Healing: Automatically running Stage 1 baseline fine-tuning for seed {seed} (epochs=5)...")
+            from experiments.train_baseline import train_seed
+            yolo_weights = str(train_seed(seed=seed, data_root=cfg.get("data_root"), epochs=5, device=cfg.get("device")))
         from ultralytics import YOLO
         model = YOLO(yolo_weights).model
     model = model.to(device).eval().requires_grad_(False)

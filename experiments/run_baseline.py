@@ -152,10 +152,11 @@ def main() -> None:
         all_expected = [str(Path(cfg["project"]) / f"seed{s}" / "weights" / "best.pt") for s in cfg["seeds"]]
         weights = [w for w in all_expected if Path(w).is_file()]
         if not weights:
-            raise SystemExit(
-                f"No fine-tuned weights found in {cfg['project']}!\n"
-                f"Stage 1 must run first: python -m experiments.train_baseline --seed 42 --epochs 5"
-            )
+            print(f"[!] No fine-tuned weights found in {cfg['project']}.")
+            print(f"[+] Self-Healing: Automatically fine-tuning Stage 1 baseline for seed 42 (epochs=5)...")
+            from experiments.train_baseline import train_seed
+            w = train_seed(seed=42, data_root=cfg.get("data_root"), epochs=5, device=cfg.get("device"))
+            weights = [str(w)]
         if len(weights) < len(all_expected):
             missing_seeds = [s for s in cfg["seeds"] if str(Path(cfg["project"]) / f"seed{s}" / "weights" / "best.pt") not in weights]
             print(f"Notice: Evaluating {len(weights)} available run(s). Missing seeds {missing_seeds} will be omitted.", file=sys.stderr)
