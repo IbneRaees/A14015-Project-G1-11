@@ -44,14 +44,28 @@ class Qwen2VLBackend:
         import torch
         from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
-        kw = dict(torch_dtype=getattr(torch, self.dtype), attn_implementation="sdpa")
+        dtype = getattr(torch, self.dtype) if hasattr(torch, self.dtype) else torch.bfloat16
+        kw = dict(torch_dtype=dtype, attn_implementation="sdpa")
+
+        if self.device == "cpu":
+            kw["device_map"] = "cpu"
+        else:
+            kw["device_map"] = "auto"
+
         if self.load_in_4bit:
-            from transformers import BitsAndBytesConfig
-            kw["quantization_config"] = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=getattr(torch, self.dtype))
-            kw["device_map"] = {"": self.device}
+            try:
+                from transformers import BitsAndBytesConfig
+                kw["quantization_config"] = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=dtype,
+                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_quant_type="nf4",
+                )
+            except Exception as e:
+                import warnings
+                warnings.warn(f"bitsandbytes quantization setup failed: {e}. Falling back to standard device_map='auto'.")
+
         self.model = Qwen2VLForConditionalGeneration.from_pretrained(self.name, **kw)
-        if not self.load_in_4bit:
-            self.model = self.model.to(self.device)
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(self.name, max_pixels=self.max_pixels)
 
@@ -63,7 +77,8 @@ class Qwen2VLBackend:
             self._load()
         messages = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": prompt}]}]
         text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        inputs = self.processor(text=[text], images=[Image.fromarray(image_rgb)], return_tensors="pt").to(self.device)
+        target_device = self.model.device if hasattr(self.model, "device") else self.device
+        inputs = self.processor(text=[text], images=[Image.fromarray(image_rgb)], return_tensors="pt").to(target_device)
         with torch.inference_mode():
             out = self.model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
         new = out[:, inputs["input_ids"].shape[1]:]

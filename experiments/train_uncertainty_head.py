@@ -167,6 +167,12 @@ def train(cfg: dict, kind: str, seed: int, out_dir, model: Optional[torch.nn.Mod
 
     yolo_weights = cfg["yolo_weights"].format(seed=seed)
     if model is None:
+        if not Path(yolo_weights).is_file():
+            raise FileNotFoundError(
+                f"\n[!] Required YOLO fine-tuned weights not found: '{yolo_weights}'\n"
+                f"[!] Prerequisite missing: You must execute Stage 1 first to train the baseline model:\n"
+                f"    python -m experiments.train_baseline --seed {seed} --epochs 5\n"
+            )
         from ultralytics import YOLO
         model = YOLO(yolo_weights).model
     model = model.to(device).eval().requires_grad_(False)

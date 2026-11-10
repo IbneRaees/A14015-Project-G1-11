@@ -21,7 +21,7 @@ calib_tiles: 20             # val tiles used to time the fast path and the escal
 # heavy path
 vlm_model: Qwen/Qwen2-VL-7B-Instruct
 vlm_dtype: bfloat16
-vlm_load_in_4bit: false
+vlm_load_in_4bit: true
 vlm_crop_max_side: 448
 vlm_max_new_tokens: 48
 log_dir: logs/e3

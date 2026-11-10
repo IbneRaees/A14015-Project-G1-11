@@ -143,11 +143,22 @@ def main() -> None:
     a = ap.parse_args()
     cfg = load_config(a.config, data_root=a.data_root, device=a.device, conf=a.conf, imgsz=a.imgsz)
 
-    weights = a.weights or [str(Path(cfg["project"]) / f"seed{s}" / "weights" / "best.pt")
-                            for s in cfg["seeds"]]
-    missing = [w for w in weights if not Path(w).is_file()]
-    if missing:
-        raise SystemExit(f"weights not found: {missing}\nTrain first: python -m experiments.train_baseline --seed N")
+    if a.weights:
+        weights = a.weights
+        missing = [w for w in weights if not Path(w).is_file()]
+        if missing:
+            raise SystemExit(f"Specified weights not found: {missing}")
+    else:
+        all_expected = [str(Path(cfg["project"]) / f"seed{s}" / "weights" / "best.pt") for s in cfg["seeds"]]
+        weights = [w for w in all_expected if Path(w).is_file()]
+        if not weights:
+            raise SystemExit(
+                f"No fine-tuned weights found in {cfg['project']}!\n"
+                f"Stage 1 must run first: python -m experiments.train_baseline --seed 42 --epochs 5"
+            )
+        if len(weights) < len(all_expected):
+            missing_seeds = [s for s in cfg["seeds"] if str(Path(cfg["project"]) / f"seed{s}" / "weights" / "best.pt") not in weights]
+            print(f"Notice: Evaluating {len(weights)} available run(s). Missing seeds {missing_seeds} will be omitted.", file=sys.stderr)
 
     strict = a.smoke_counts is None
     expected = EXPECTED_COUNTS if strict else dict(zip(("train", "val", "test"),
