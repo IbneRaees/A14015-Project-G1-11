@@ -130,7 +130,7 @@ def main(backend=None) -> None:
     ap.add_argument("--vlm-model", default="Qwen/Qwen2-VL-7B-Instruct")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--dtype", default="bfloat16")
-    ap.add_argument("--load-in-4bit", action="store_true")
+    ap.add_argument("--load-in-4bit", action="store_true", default=True)
     ap.add_argument("--route-max-pixels", type=int, default=1024 * 768,
                     help="pixel budget the VLM processor may use for the whole tile")
     ap.add_argument("--pairs-per-type", type=int, default=4)
