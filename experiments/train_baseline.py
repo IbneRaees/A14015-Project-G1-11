@@ -38,9 +38,13 @@ def train_seed(seed: int, config: str | None = None, data_root: str | None = Non
         yaml_path = prepare(cfg["data_root"], cfg["yolo_dir"], expected)
 
     model = YOLO(cfg["base_model"])
+    # Use save_dir instead of project+name to bypass Ultralytics automatic
+    # task-subdirectory injection (e.g. it would prepend "runs/segment/"
+    # making the actual path "runs/segment/runs/e1/seed42" not "runs/e1/seed42").
+    save_dir = str(Path(cfg["project"]) / f"seed{seed}")
     model.train(data=str(yaml_path), epochs=cfg["epochs"], imgsz=cfg["imgsz"], batch=cfg["batch"],
                 seed=seed, deterministic=True, device=cfg["device"],
-                project=cfg["project"], name=f"seed{seed}", exist_ok=True, plots=False)
+                save_dir=save_dir, exist_ok=True, plots=False)
     print("best weights:", best_weights)
     return best_weights
 
